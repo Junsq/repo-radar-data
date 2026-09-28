@@ -1,0 +1,37 @@
+name: Repo Radar Daten
+
+on:
+  schedule:
+    # Montag 03:00 UTC = 05:00 Uhr deutsche Sommerzeit, 04:00 Uhr Winterzeit
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pakete installieren
+        run: pip install requests beautifulsoup4
+
+      - name: Daten abrufen
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/fetch_trending.py
+
+      - name: Ergebnis speichern
+        run: |
+          git config user.name "repo-radar-bot"
+          git config user.email "repo-radar-bot@users.noreply.github.com"
+          git add data/
+          git commit -m "Repo Radar Daten $(date -u +%Y-%m-%d)" || echo "Keine Aenderungen"
+          git push
